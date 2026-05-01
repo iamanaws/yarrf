@@ -308,7 +308,7 @@ var vm = new Vue({
       return {type: type, feed: feed, folder: folder}
     },
     itemSelectedContent: function() {
-      if (!this.itemSelected) return ''
+      if (!this.itemSelected || !this.itemSelectedDetails) return ''
 
       if (this.itemSelectedReadability)
         return this.itemSelectedReadability
@@ -383,16 +383,18 @@ var vm = new Vue({
       }
       if (this.$refs.content) this.$refs.content.scrollTop = 0
 
+      var itemInList = this.items.find(function(i) { return i.id == newVal })
+      if (itemInList) {
+        this.itemSelectedDetails = Object.assign({}, itemInList)
+        this.markItemReadAfterSelection(this.itemSelectedDetails)
+        return
+      }
+
+      this.itemSelectedDetails = null
       api.items.get(newVal).then(function(item) {
+        if (this.itemSelected != item.id) return
         this.itemSelectedDetails = item
-        if (this.itemSelectedDetails.status == 'unread') {
-          api.items.update(this.itemSelectedDetails.id, {status: 'read'}).then(function() {
-            this.feedStats[this.itemSelectedDetails.feed_id].unread -= 1
-            var itemInList = this.items.find(function(i) { return i.id == item.id })
-            if (itemInList) itemInList.status = 'read'
-            this.itemSelectedDetails.status = 'read'
-          }.bind(this))
-        }
+        this.markItemReadAfterSelection(item)
       }.bind(this))
     },
     'itemSearch': debounce(function(newVal) {
@@ -663,6 +665,21 @@ var vm = new Vue({
     toggleItemRead: function(item) {
       this.toggleItemStatus(item, 'unread', 'read')
     },
+    markItemReadAfterSelection: function(item) {
+      if (!item || item.status != 'unread') return
+
+      api.items.update(item.id, {status: 'read'}).then(function() {
+        if (this.feedStats[item.feed_id]) this.feedStats[item.feed_id].unread -= 1
+
+        var itemInList = this.items.find(function(i) { return i.id == item.id })
+        if (itemInList) itemInList.status = 'read'
+
+        item.status = 'read'
+        if (this.itemSelectedDetails && this.itemSelectedDetails.id == item.id) {
+          this.itemSelectedDetails.status = 'read'
+        }
+      }.bind(this))
+    },
     importOPML: function(event) {
       var input = event.target
       var form = document.querySelector('#opml-import-form')
@@ -684,7 +701,7 @@ var vm = new Vue({
         return
       }
       var item = this.itemSelectedDetails
-      if (!item) return
+      if (!item || item.id != this.itemSelected) return
       if (item.link) {
         this.loading.readability = true
         api.crawl(item.link).then(function(data) {

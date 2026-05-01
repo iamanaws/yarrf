@@ -324,18 +324,7 @@ func (s *Server) handleItem(c *router.Context) {
 			return
 		}
 
-		// runtime fix for relative links
-		if !htmlutil.IsAPossibleLink(item.Link) {
-			if feed := s.db.GetFeed(item.FeedId); feed != nil {
-				item.Link = htmlutil.AbsoluteUrl(item.Link, feed.Link)
-			}
-		}
-
-		item.Content = sanitizer.Sanitize(item.Link, item.Content)
-		for i, link := range item.MediaLinks {
-			item.MediaLinks[i].Description = sanitizer.Sanitize(item.Link, link.Description)
-		}
-
+		s.prepareItemForResponse(item)
 		c.JSON(http.StatusOK, item)
 	} else if c.Req.Method == "PUT" {
 		var body ItemUpdateForm
@@ -350,6 +339,20 @@ func (s *Server) handleItem(c *router.Context) {
 		c.Out.WriteHeader(http.StatusOK)
 	} else {
 		c.Out.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func (s *Server) prepareItemForResponse(item *storage.Item) {
+	// Runtime fix for relative links.
+	if !htmlutil.IsAPossibleLink(item.Link) {
+		if feed := s.db.GetFeed(item.FeedId); feed != nil {
+			item.Link = htmlutil.AbsoluteUrl(item.Link, feed.Link)
+		}
+	}
+
+	item.Content = sanitizer.Sanitize(item.Link, item.Content)
+	for i, link := range item.MediaLinks {
+		item.MediaLinks[i].Description = sanitizer.Sanitize(item.Link, link.Description)
 	}
 }
 
@@ -384,11 +387,12 @@ func (s *Server) handleItemList(c *router.Context) {
 			items = items[:perPage]
 		}
 
-		for i, item := range items {
-			if item.Title == "" {
-				text := htmlutil.ExtractText(item.Content)
+		for i := range items {
+			if items[i].Title == "" {
+				text := htmlutil.ExtractText(items[i].Content)
 				items[i].Title = htmlutil.TruncateText(text, 140)
 			}
+			s.prepareItemForResponse(&items[i])
 		}
 		c.JSON(http.StatusOK, map[string]any{
 			"list":     items,

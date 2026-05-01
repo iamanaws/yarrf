@@ -1,4 +1,9 @@
 var helperFunctions = {
+  currentItemDetails: function() {
+    if (vm.itemSelectedDetails && vm.itemSelectedDetails.id == vm.itemSelected) {
+      return vm.itemSelectedDetails
+    }
+  },
   scrollContent: function(direction) {
     var padding = 40
     var scroll = document.querySelector('.content')
@@ -16,16 +21,18 @@ var helperFunctions = {
 }
 var shortcutFunctions = {
   openItemLink: function() {
-    if (vm.itemSelectedDetails && vm.itemSelectedDetails.link) {
-      window.open(vm.itemSelectedDetails.link, '_blank', 'noopener,noreferrer')
+    var item = helperFunctions.currentItemDetails()
+    if (item && item.link) {
+      window.open(item.link, '_blank', 'noopener,noreferrer')
     }
   },
   toggleReadability: function() {
     vm.toggleReadability()
   },
   toggleItemRead: function() {
-    if (vm.itemSelected != null) {
-      vm.toggleItemRead(vm.itemSelectedDetails)
+    var item = helperFunctions.currentItemDetails()
+    if (item) {
+      vm.toggleItemRead(item)
     }
   },
   markAllRead: function() {
@@ -35,8 +42,9 @@ var shortcutFunctions = {
     }
   },
   toggleItemStarred: function() {
-    if (vm.itemSelected != null) {
-      vm.toggleItemStarred(vm.itemSelectedDetails)
+    var item = helperFunctions.currentItemDetails()
+    if (item) {
+      vm.toggleItemStarred(item)
     }
   },
   focusSearch: function() {

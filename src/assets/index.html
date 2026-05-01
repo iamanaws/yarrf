@@ -302,7 +302,7 @@
         </div>
         <!-- item show -->
         <div id="col-item" class="vh-100 d-flex flex-column w-100" style="min-width: 0;">
-            <div class="toolbar px-2 d-flex align-items-center" v-if="itemSelectedDetails">
+            <div class="toolbar px-2 d-flex align-items-center" v-if="itemSelectedDetails && itemSelectedDetails.id == itemSelected">
                 <button class="toolbar-item"
                         @click="toggleItemStarred(itemSelectedDetails)"
                         title="Mark Starred">
@@ -349,7 +349,7 @@
                     <span class="icon">{% inline "x.svg" %}</span>
                 </button>
             </div>
-            <div v-if="itemSelectedDetails"
+            <div v-if="itemSelectedDetails && itemSelectedDetails.id == itemSelected"
                  ref="content"
                  class="content px-4 pt-3 pb-5 border-top overflow-auto scroll-touch"
                  :class="{'font-serif': theme.font == 'serif', 'font-monospace': theme.font == 'monospace'}"
